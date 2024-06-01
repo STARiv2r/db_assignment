@@ -14,9 +14,10 @@ void btree::insert(char *key, uint64_t val){
 	page* C = root;
 	while (C->get_type() == INTERNAL) {
 		char* split_key = nullptr;
-		C = (page *)C->find(key);
 		top++;
 		stack[top] = C;
+		C = (page *)C->find(key);
+
 	}
 
 	if(!C->is_full(strlen(key) + 1 + sizeof(val) + sizeof(uint16_t))) {
@@ -34,9 +35,9 @@ void btree::insert(char *key, uint64_t val){
 			root = new_root;
 			height++;
 		}else {
-
-			page* parent = C->get_parent();
+			page* parent = stack[top];
 			parent->insert(new_parent_key, (uint64_t)new_leaf);
+			top--;
 		}
 	}
 }
