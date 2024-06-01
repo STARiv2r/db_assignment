@@ -1,4 +1,5 @@
 #include "btree.hpp"
+#include <cstring>
 #include <iostream> 
 
 btree::btree(){
@@ -8,46 +9,58 @@ btree::btree(){
 
 void btree::insert(char *key, uint64_t val){
 	// Please implement this function in project 3.
+	page* stack[1000];
+	int top=-1;
+	page* C = root;
+	while (C->get_type() == INTERNAL) {
+		char* split_key = nullptr;
+		C = (page *)C->find(key);
+		top++;
+		stack[top] = C;
+	}
 
+	if(!C->is_full(strlen(key) + 1 + sizeof(val) + sizeof(uint16_t))) {
+		C->insert(key, val);//ë¹ˆê³µê°„ ìžˆìœ¼ë©´ ê·¸ëƒ¥ ì‚½ìž…
+	}else {
+		//ê°€ë“ì°¨ì„œ ìƒˆë¡œìš´ nodeê°€ í•„ìš”
+		char* new_parent_key = nullptr;
+		page* new_leaf = C->split(key, val, &new_parent_key);
+
+		if(C == root) {
+			//split í•´ì•¼í•˜ëŠ”ê²Œ rootì¼ë•Œ ìƒˆë¡œìš´ root í•„ìš”
+			page* new_root = new page(INTERNAL);
+			new_root->insert(new_parent_key, (uint64_t)new_leaf);
+			new_root->set_leftmost_ptr(C);
+			root = new_root;
+			height++;
+		}else {
+
+			page* parent = C->get_parent();
+			parent->insert(new_parent_key, (uint64_t)new_leaf);
+		}
+	}
 }
 
 uint64_t btree::lookup(char *key){
 	// Please implement this function in project 3.
-	uint64_t val = 0;
+
 	page* C = root;
 	while (C->get_type() == INTERNAL) {
-		//val = C->find(key);
-		uint32_t num_data = hdr.get_num_data();
-		uint16_t off = 0;
-		void *offset_array = hdr.get_offset_array();
-		for (int i = 0; i < num_data; i++) {
-			off = *(uint16_t *)((uint64_t)offset_array + i * 2);
-			if (key < off) {
-				//¿ÞÂÊ Æ÷ÀÎÅÍ Å¸±â
-				
-			}
-			else if (key == off) {
-				//¿À¸¥ÂÊ Æ÷ÀÎÅÍ Å¸±â
-			}
-
-			//µ¹¾Æ°¡±â
-
-		}
-		
+		C = (page *)C->find(key);
 	}
-	val = C->find(key);
-	return val;
+
+	return C->find(key);
 }
 
 
 
-uint16_t record_size = 0;
-
-void *stored_key = nullptr;
-uint64_t stored_val = 0;
-
-printf("## slot header\n");
-printf("Number of data :%d\n", num_data);
-printf("offset_array : |");
-
-printf("\n");
+// uint16_t record_size = 0;
+//
+// void *stored_key = nullptr;
+// uint64_t stored_val = 0;
+//
+// printf("## slot header\n");
+// printf("Number of data :%d\n", num_data);
+// printf("offset_array : |");
+//
+// printf("\n");
