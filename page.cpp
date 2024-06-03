@@ -127,7 +127,35 @@ bool page::insert(char *key,uint64_t val){
 
 page* page::split(char *key, uint64_t val, char** parent_key){
 	// Please implement this function in project 3.
-	page *new_page;
+
+	uint16_t size = strlen(key) + 1 + sizeof(val) + sizeof(uint16_t);
+
+	page* new_page = new page(get_type());
+	uint32_t num_data = hdr.get_num_data();
+	uint16_t* offset_array = (uint16_t*)hdr.get_offset_array();
+	uint32_t half = (num_data + 1) / 2;
+
+	defrag();
+
+	for (uint32_t i = half; i < num_data; ++i) {
+		uint16_t offset = offset_array[i];
+		char* record_key = get_key((char*)this + offset);
+		uint64_t record_val = get_val(record_key);
+		new_page->insert(record_key, record_val);
+	}
+
+	uint16_t new_off = hdr.get_data_region_off() - size;
+	hdr.set_data_region_off(new_off);
+
+	put2byte((void*)((char*)this + new_off), size);
+	memcpy((void*)((char*)this + new_off + sizeof(size)), key, strlen(key) + 1);
+	memcpy((void*)((char*)this + new_off + sizeof(size) + strlen(key) + 1), &val, sizeof(uint64_t));
+
+	hdr.set_num_data(half);
+	new_page->hdr.set_num_data(num_data - half);
+
+	*parent_key = get_key((char*)((uint64_t)this + (uint64_t)offset_array[half]));
+
 	return new_page;
 }
 
